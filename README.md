@@ -9,7 +9,7 @@ Solução **HTML5 + CSS3 + Bootstrap 5 + JavaScript** para métricas essenciais 
 - **Repositório**: [https://github.com/Bella5900g/qa-metrics-dashboard](https://github.com/Bella5900g/qa-metrics-dashboard)
 
 ### 🎯 **Objetivo Principal**
-Este dashboard foi criado para **facilitar a vida do QA** na coleta, análise e apresentação de métricas essenciais durante **cerimônias de review** e **reuniões com stakeholders**. O foco é fornecer uma ferramenta **simples, rápida e profissional** que permita ao QA apresentar dados de qualidade de forma visual e impactante.
+Este dashboard foi criado para **facilitar a vida do QA** na coleta, análise e apresentação de métricas essenciais durante **cerimônias de review** e **reuniões com stakeholders**. O foco é fornecer uma ferramenta **simples, rápida e profissional** que permita ao QA apresentar dados de qualidade de forma visual e simples.
 
 ## ✨ Características Principais
 
