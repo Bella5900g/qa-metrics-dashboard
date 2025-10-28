@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Dashboard de Métricas QA - Review</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas para capturar gráficos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+        
+        .status-excelente { color: var(--success-color); }
+        .status-bom { color: var(--info-color); }
+        .status-atencao { color: var(--warning-color); }
+        .status-critico { color: var(--danger-color); }
+        
+        .badge-status {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-custom {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .progress-custom {
+            height: 8px;
+            border-radius: 10px;
+        }
+
+        .help-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--info-color);
+        }
+
+        .help-item h6 {
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .help-item p {
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light-bg);
+        }
+        
+        .input-group-custom {
+            margin-bottom: 1rem;
+        }
+        
+        .input-group-custom label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .input-group-custom input {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem;
+        }
+        
+        .input-group-custom input:focus {
+            border-color: var(--info-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 144, 219, 0.25);
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid var(--info-color);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .metric-value {
+                font-size: 2rem;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            .form-section {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up"></i> QA Metrics Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#entrada-dados">Entrada de Dados</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#ajuda-campos">Ajuda dos Campos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#relatorio">Relatório</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        
+        <!-- Seção de Entrada de Dados -->
+        <div id="entrada-dados" class="form-section">
+            <h2 class="section-title">
+                <i class="bi bi-pencil-square"></i> Entrada de Métricas QA
+            </h2>
+            
+            <div class="row">
+                <!-- Métricas Críticas -->
+                <div class="col-lg-6">
+                    <h4 class="text-primary mb-3">🎯 Métricas Críticas</h4>
+                    
+                    <div class="input-group-custom">
+                        <label for="taxa-escape">Taxa de Escape (%)</label>
+                        <input type="number" id="taxa-escape" class="form-control" placeholder="Ex: 3.2" step="0.1" min="0" max="100">
+                        <small class="form-text text-muted">Meta: < 5%</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="cobertura-codigo">Cobertura de Código (%)</label>
+                        <input type="number" id="cobertura-codigo" class="form-control" placeholder="Ex: 78.5" step="0.1" min="0" max="100">
+                        <small class="form-text text-muted">Meta: > 70%</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="mttr">MTTR - Tempo Médio Resolução (horas)</label>
+                        <input type="number" id="mttr" class="form-control" placeholder="Ex: 6.2" step="0.1" min="0">
+                        <small class="form-text text-muted">Meta: < 8h</small>
+                    </div>
+                </div>
+                
+                <!-- Métricas de Eficiência -->
+                <div class="col-lg-6">
+                    <h4 class="text-primary mb-3">⚡ Métricas de Eficiência</h4>
+                    
+                    <div class="input-group-custom">
+                        <label for="taxa-automacao">Taxa de Automação (%)</label>
+                        <input type="number" id="taxa-automacao" class="form-control" placeholder="Ex: 72.3" step="0.1" min="0" max="100">
+                        <small class="form-text text-muted">Meta: > 70%</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="taxa-acerto">Taxa de Acerto (%)</label>
+                        <input type="number" id="taxa-acerto" class="form-control" placeholder="Ex: 85.7" step="0.1" min="0" max="100">
+                        <small class="form-text text-muted">Meta: > 85%</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="defects-abertos">Defects Abertos (Desenvolvimento)</label>
+                        <input type="number" id="defects-abertos" class="form-control" placeholder="Ex: 8" min="0">
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="defects-fechados">Defects Fechados (Desenvolvimento)</label>
+                        <input type="number" id="defects-fechados" class="form-control" placeholder="Ex: 15" min="0">
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="bugs-abertos">Bugs Abertos (Produção)</label>
+                        <input type="number" id="bugs-abertos" class="form-control" placeholder="Ex: 2" min="0">
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label for="bugs-fechados">Bugs Fechados (Produção)</label>
+                        <input type="number" id="bugs-fechados" class="form-control" placeholder="Ex: 3" min="0">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Métricas de Testes -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h4 class="text-primary mb-3">🧪 Métricas de Testes</h4>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="input-group-custom">
+                        <label for="testes-criados">Testes Criados</label>
+                        <input type="number" id="testes-criados" class="form-control" placeholder="Ex: 45" min="0">
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="input-group-custom">
+                        <label for="testes-executados">Testes Executados</label>
+                        <input type="number" id="testes-executados" class="form-control" placeholder="Ex: 42" min="0">
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="input-group-custom">
+                        <label for="testes-passaram">Testes que Passaram</label>
+                        <input type="number" id="testes-passaram" class="form-control" placeholder="Ex: 38" min="0">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botões de Ação -->
+            <div class="text-center mt-4">
+                <button id="calcular-metricas" class="btn btn-primary btn-custom me-3">
+                    <i class="bi bi-calculator"></i> Calcular Métricas
+                </button>
+                <button id="limpar-dados" class="btn btn-outline-secondary btn-custom">
+                    <i class="bi bi-arrow-clockwise"></i> Limpar Dados
+                </button>
+            </div>
+        </div>
+
+        <!-- Seção de Ajuda -->
+        <div id="ajuda-campos" class="form-section">
+            <h2 class="section-title">
+                <i class="bi bi-question-circle"></i> Guia de Uso - Como Preencher os Campos
+            </h2>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Dica:</strong> Esta seção explica o que cada campo significa e como preenchê-lo corretamente para obter métricas precisas.
+            </div>
+
+            <div class="row">
+                <!-- Métricas Críticas -->
+                <div class="col-lg-6">
+                    <h4 class="text-primary mb-3">🎯 Métricas Críticas - Explicação</h4>
+                    
+                    <div class="help-item mb-4">
+                        <h6 class="text-dark"><i class="bi bi-bug"></i> Taxa de Escape (%)</h6>
+                        <p class="text-muted mb-2">
+                            <strong>O que é:</strong> Percentual de bugs que escaparam dos testes e chegaram à produção.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Como calcular:</strong> (Bugs em Produção ÷ Total de Bugs Encontrados) × 100
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Exemplo:</strong> Se você encontrou 100 bugs e 3 chegaram à produção: 3 ÷ 100 × 100 = 3%
+                        </p>
+                        <div class="alert alert-success py-2">
+                            <small><strong>Meta:</strong> Menor que 5% - Indica boa qualidade dos testes</small>
+                        </div>
+                    </div>
+
+                    <div class="help-item mb-4">
+                        <h6 class="text-dark"><i class="bi bi-code-slash"></i> Cobertura de Código (%)</h6>
+                        <p class="text-muted mb-2">
+                            <strong>O que é:</strong> Percentual do código que é coberto por testes automatizados.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Como obter:</strong> Use ferramentas como JaCoCo, Istanbul, ou SonarQube para medir.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Exemplo:</strong> Se você tem 1000 linhas de código e 750 são testadas: 75%
+                        </p>
+                        <div class="alert alert-success py-2">
+                            <small><strong>Meta:</strong> Maior que 70% - Garante boa cobertura de testes</small>
+                        </div>
+                    </div>
+
+                    <div class="help-item mb-4">
+                        <h6 class="text-dark"><i class="bi bi-clock"></i> MTTR - Tempo Médio de Resolução (horas)</h6>
+                        <p class="text-muted mb-2">
+                            <strong>O que é:</strong> Tempo médio que leva para corrigir um bug desde sua descoberta até a correção.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Como calcular:</strong> Soma dos tempos de resolução ÷ Número de bugs corrigidos
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Exemplo:</strong> 3 bugs corrigidos em 2h, 4h e 8h: (2+4+8) ÷ 3 = 4.7 horas
+                        </p>
+                        <div class="alert alert-success py-2">
+                            <small><strong>Meta:</strong> Menor que 8h - Indica eficiência na correção</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas de Eficiência -->
+                <div class="col-lg-6">
+                    <h4 class="text-primary mb-3">⚡ Métricas de Eficiência - Explicação</h4>
+                    
+                    <div class="help-item mb-4">
+                        <h6 class="text-dark"><i class="bi bi-robot"></i> Taxa de Automação (%)</h6>
+                        <p class="text-muted mb-2">
+                            <strong>O que é:</strong> Percentual de testes que são automatizados vs testes manuais.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Como calcular:</strong> (Testes Automatizados ÷ Total de Testes) × 100
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Exemplo:</strong> 80 testes automatizados de 100 totais: 80 ÷ 100 × 100 = 80%
+                        </p>
+                        <div class="alert alert-success py-2">
+                            <small><strong>Meta:</strong> Maior que 70% - Reduz esforço manual e aumenta velocidade</small>
+                        </div>
+                    </div>
+
+                    <div class="help-item mb-4">
+                        <h6 class="text-dark"><i class="bi bi-check-circle"></i> Taxa de Acerto (%)</h6>
+                        <p class="text-muted mb-2">
+                            <strong>O que é:</strong> Percentual de bugs reportados que são realmente bugs válidos.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Como calcular:</strong> (Bugs Válidos ÷ Total de Reports) × 100
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Exemplo:</strong> 85 bugs válidos de 100 reports: 85 ÷ 100 × 100 = 85%
+                        </p>
+                        <div class="alert alert-success py-2">
+                            <small><strong>Meta:</strong> Maior que 85% - Indica precisão na identificação de bugs</small>
+                        </div>
+                    </div>
+
+                    <div class="help-item mb-4">
+                        <h6 class="text-dark"><i class="bi bi-exclamation-triangle"></i> Defects vs Bugs</h6>
+                        <p class="text-muted mb-2">
+                            <strong>Defects (Desenvolvimento):</strong> Problemas encontrados durante testes no ambiente de desenvolvimento.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Bugs (Produção):</strong> Problemas encontrados em ambiente de produção pelos usuários.
+                        </p>
+                        <p class="text-muted mb-2">
+                            <strong>Diferença:</strong> Defects são corrigidos antes do deploy, Bugs chegam aos usuários.
+                        </p>
+                        <div class="alert alert-warning py-2">
+                            <small><strong>Objetivo:</strong> Maximizar Defects (desenvolvimento) e minimizar Bugs (produção)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h4 class="text-primary mb-3">🧪 Métricas de Testes - Explicação</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="help-item">
+                                <h6 class="text-dark"><i class="bi bi-plus-circle"></i> Testes Criados</h6>
+                                <p class="text-muted mb-2">
+                                    <strong>O que é:</strong> Número total de casos de teste criados no período.
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <strong>Inclui:</strong> Testes manuais e automatizados, novos casos de teste.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="help-item">
+                                <h6 class="text-dark"><i class="bi bi-play-circle"></i> Testes Executados</h6>
+                                <p class="text-muted mb-2">
+                                    <strong>O que é:</strong> Número de testes que foram executados no período.
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <strong>Inclui:</strong> Testes executados manualmente ou automaticamente.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="help-item">
+                                <h6 class="text-dark"><i class="bi bi-check-circle"></i> Testes que Passaram</h6>
+                                <p class="text-muted mb-2">
+                                    <strong>O que é:</strong> Número de testes que passaram com sucesso.
+                                </p>
+                                <p class="text-muted mb-2">
+                                    <strong>Calcula:</strong> Taxa de Sucesso = (Passaram ÷ Executados) × 100
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="alert alert-light border">
+                        <h5 class="text-dark mb-3"><i class="bi bi-lightbulb"></i> Dicas Importantes:</h5>
+                        <ul class="mb-0">
+                            <li><strong>Consistência:</strong> Use sempre o mesmo período para todas as métricas (ex: últimos 30 dias)</li>
+                            <li><strong>Precisão:</strong> Use números decimais quando necessário (ex: 3.2% em vez de 3%)</li>
+                            <li><strong>Contexto:</strong> Preencha sempre o nome da equipe e período de análise</li>
+                            <li><strong>Observações:</strong> Adicione comentários sobre eventos especiais que podem ter afetado as métricas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard de Resultados -->
+        <div id="dashboard" class="hidden">
+            <!-- Header do Dashboard -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-1">📊 Dashboard de Métricas QA</h1>
+                            <p class="text-muted mb-0">Métricas essenciais para reviews de liderança</p>
+                        </div>
+                        <div class="text-end">
+                            <span id="status-geral" class="badge badge-status bg-primary">BOM</span>
+                            <div class="small text-muted mt-1" id="data-geracao">2024-01-15 10:30:00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas Principais -->
+            <div class="row mb-4">
+                <!-- Taxa de Escape -->
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <div id="taxa-escape-valor" class="metric-value status-bom">3.2%</div>
+                            <div class="metric-label">Taxa de Escape</div>
+                            <div class="progress progress-custom">
+                                <div id="taxa-escape-progress" class="progress-bar bg-success" role="progressbar" style="width: 64%"></div>
+                            </div>
+                            <small class="text-muted">Meta: < 5%</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cobertura de Código -->
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <div id="cobertura-valor" class="metric-value status-bom">78.5%</div>
+                            <div class="metric-label">Cobertura de Código</div>
+                            <div class="progress progress-custom">
+                                <div id="cobertura-progress" class="progress-bar bg-info" role="progressbar" style="width: 78.5%"></div>
+                            </div>
+                            <small class="text-muted">Meta: > 70%</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MTTR -->
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <div id="mttr-valor" class="metric-value status-bom">6.2h</div>
+                            <div class="metric-label">MTTR</div>
+                            <div class="progress progress-custom">
+                                <div id="mttr-progress" class="progress-bar bg-warning" role="progressbar" style="width: 77.5%"></div>
+                            </div>
+                            <small class="text-muted">Meta: < 8h</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Taxa de Automação -->
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <div id="automacao-valor" class="metric-value status-bom">72.3%</div>
+                            <div class="metric-label">Taxa de Automação</div>
+                            <div class="progress progress-custom">
+                                <div id="automacao-progress" class="progress-bar bg-primary" role="progressbar" style="width: 72.3%"></div>
+                            </div>
+                            <small class="text-muted">Meta: > 70%</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas Secundárias -->
+            <div class="row mb-4">
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-check-circle text-success"></i> Taxa de Acerto
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div id="acerto-valor" class="h4 mb-1">85.7%</div>
+                                <small class="text-muted">Aprovadas na 1ª passada</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-bug text-warning"></i> Defects (Desenvolvimento)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div id="defects-fechados-valor" class="h4 mb-1 text-success">15</div>
+                                        <small class="text-muted">Fechados</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div id="defects-abertos-valor" class="h4 mb-1 text-warning">8</div>
+                                        <small class="text-muted">Abertos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-bug text-danger"></i> Bugs (Produção)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div id="bugs-fechados-valor" class="h4 mb-1 text-success">3</div>
+                                        <small class="text-muted">Fechados</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div id="bugs-abertos-valor" class="h4 mb-1 text-danger">2</div>
+                                        <small class="text-muted">Abertos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas de Testes -->
+            <div class="row mb-4">
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-plus-circle text-primary"></i> Testes Criados
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div id="testes-criados-valor" class="h4 mb-1">45</div>
+                                <small class="text-muted">Novos testes</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-play-circle text-info"></i> Testes Executados
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div id="testes-executados-valor" class="h4 mb-1">42</div>
+                                <small class="text-muted">Execuções realizadas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-check-circle text-success"></i> Taxa de Sucesso dos Testes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div id="taxa-sucesso-testes-valor" class="h4 mb-1">90.5%</div>
+                                <small class="text-muted">Testes que passaram</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="row mb-4">
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-pie-chart"></i> Defects vs Bugs
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="defectsBugsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-bar-chart"></i> Comparação com Metas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="metasChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-graph-up"></i> Status dos Testes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="testesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumo Executivo -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-file-text"></i> Resumo Executivo para Review
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>✅ Pontos Positivos:</h6>
+                                    <ul id="pontos-positivos" class="list-unstyled">
+                                        <li><i class="bi bi-check-circle text-success"></i> Taxa de escape dentro da meta</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Cobertura de código adequada</li>
+                                        <li><i class="bi bi-check-circle text-success"></i> Boa taxa de automação</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>⚠️ Pontos de Atenção:</h6>
+                                    <ul id="pontos-atencao" class="list-unstyled">
+                                        <li><i class="bi bi-exclamation-triangle text-warning"></i> Monitorar MTTR</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Relatório -->
+        <div id="relatorio" class="form-section hidden">
+            <h2 class="section-title">
+                <i class="bi bi-file-earmark-pdf"></i> Gerar Relatório
+            </h2>
+            
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Informações do Relatório</h5>
+                            
+                            <div class="mb-3">
+                                <label for="equipe-responsavel" class="form-label">Equipe Responsável</label>
+                                <input type="text" id="equipe-responsavel" class="form-control" placeholder="Ex: Time QA Frontend" value="Time QA">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="periodo-analise" class="form-label">Período de Análise</label>
+                                <input type="text" id="periodo-analise" class="form-control" placeholder="Ex: Sprint 15 - Janeiro 2024" value="Últimos 30 dias">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="observacoes" class="form-label">Observações Adicionais</label>
+                                <textarea id="observacoes" class="form-control" rows="3" placeholder="Observações importantes para a review..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📊 Ações do Relatório</h5>
+                            
+                            <div class="d-grid gap-2">
+                                <button id="gerar-pdf" class="btn btn-danger btn-custom">
+                                    <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+                                </button>
+                                
+                                <button id="exportar-dados" class="btn btn-success btn-custom">
+                                    <i class="bi bi-download"></i> Exportar JSON
+                                </button>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    O relatório será gerado com data e hora atual automaticamente.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript Principal -->
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
