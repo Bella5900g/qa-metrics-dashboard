@@ -130,9 +130,6 @@ Metricas_QA_Dash/
 
 ### **GitHub Pages**
 - **URL**: [https://bella5900g.github.io/qa-metrics-dashboard/](https://bella5900g.github.io/qa-metrics-dashboard/)
-- **Deploy Automático**: Qualquer push na branch `main` atualiza o site
-- **HTTPS**: Certificado SSL automático
-- **CDN Global**: Carregamento rápido mundialmente
 
 ### **Estrutura para Deploy**
 ```
